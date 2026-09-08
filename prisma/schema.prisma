@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // PostgreSQL (Neon en production, voir .env.example). Necessite une vraie
+  // DATABASE_URL postgresql:// dans .env — voir README pour l'alternative
+  // SQLite de test local sans base a installer.
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  slug       String     @unique
+  createdAt  DateTime   @default(now())
+  properties Property[]
+}
+
+model Property {
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  // "SHORT" (courte duree, prix/nuit, dates) ou "LONG" (longue duree, prix/mois, pas de dates)
+  rentalType    String
+  pricePerNight Int?
+  pricePerMonth Int?
+  city          String
+  address       String
+  bedrooms      Int             @default(0)
+  bathrooms     Int             @default(0)
+  surfaceM2     Int             @default(0)
+  isFeatured    Boolean         @default(false)
+  categoryId    String
+  category      Category        @relation(fields: [categoryId], references: [id])
+  images        PropertyImage[]
+  reservations  Reservation[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  url        String
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
+model Reservation {
+  id           String    @id @default(cuid())
+  propertyId   String
+  property     Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  guestName    String
+  guestPhone   String
+  guestEmail   String?
+  // Courte duree uniquement
+  startDate    DateTime?
+  endDate      DateTime?
+  // Longue duree uniquement : date d'emmenagement souhaitee
+  moveInDate   DateTime?
+  message      String?
+  status       String    @default("pending") // pending | confirmed | rejected
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   Admin?    @relation("ReservationsResolvedBy", fields: [resolvedById], references: [id])
+}
+
+model Admin {
+  id                  String                 @id @default(cuid())
+  name                String
+  email               String                 @unique
+  passwordHash        String
+  permissions         String // liste de droits separes par des virgules, ex: "properties,categories"
+  isOwner             Boolean                @default(false)
+  mustChangePassword  Boolean                @default(false)
+  // Incremente a chaque changement de mot de passe : les sessions (JWT) emises
+  // avant l'incrementation deviennent invalides, meme si elles n'ont pas expire.
+  passwordVersion     Int                    @default(0)
+  // Anti brute-force sur /admin/login : compteur d'echecs consecutifs et
+  // date jusqu'a laquelle le compte est verrouille (voir loginAction).
+  failedLoginAttempts Int                    @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime               @default(now())
+  resetRequests        PasswordResetRequest[] @relation("ResetRequestsForAdmin")
+  resolvedRequests     PasswordResetRequest[] @relation("ResetRequestsResolvedBy")
+  resolvedReservations Reservation[]          @relation("ReservationsResolvedBy")
+}
+
+model PasswordResetRequest {
+  id           String    @id @default(cuid())
+  adminId      String
+  admin        Admin     @relation("ResetRequestsForAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  status       String    @default("pending") // pending | approved | rejected
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   Admin?    @relation("ResetRequestsResolvedBy", fields: [resolvedById], references: [id])
+}
+
+model SiteSettings {
+  id           String   @id @default("singleton")
+  siteName     String   @default("Kija")
+  logoUrl      String?
+  description  String   @default("Des logements en courte et longue duree, selectionnes avec soin.")
+  aboutContent String   @default("")
+  updatedAt    DateTime @updatedAt
+}

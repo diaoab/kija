@@ -1,0 +1,33 @@
+# ============================================================
+#  Kija — Docker Compose DÉVELOPPEMENT
+#  Usage : docker compose up -d
+#  Ne lance QUE Postgres — l'app tourne en local via "npm run dev"
+#  (le hot-reload de Next.js ne se prête pas bien à un conteneur).
+#  Pour la production : docker compose -f docker-compose.prod.yml up -d
+# ============================================================
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: kija_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-kija}
+      POSTGRES_USER:     ${POSTGRES_USER:-kija}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_en_prod}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    # En dev uniquement : exposer le port pour se connecter via pgAdmin / DBeaver
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kija} -d ${POSTGRES_DB:-kija}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data_dev:
