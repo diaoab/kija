@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { createReservationAction, type ReservationFormState } from "@/lib/actions/reservations";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
+import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/15";
@@ -12,9 +13,11 @@ const initialState: ReservationFormState = {};
 export default function ReservationRequestForm({
   propertyId,
   rentalType,
+  unavailablePeriods = [],
 }: {
   propertyId: string;
   rentalType: string;
+  unavailablePeriods?: { startDate: Date; endDate: Date }[];
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(createReservationAction, initialState);
@@ -112,15 +115,15 @@ export default function ReservationRequestForm({
                   </label>
 
                   {isShort ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="block">
-                        <span className="text-sm font-medium">Arrivée</span>
-                        <input type="date" name="startDate" required className={inputClass} />
-                      </label>
-                      <label className="block">
-                        <span className="text-sm font-medium">Départ</span>
-                        <input type="date" name="endDate" required className={inputClass} />
-                      </label>
+                    <div>
+                      <span className="text-sm font-medium">Dates du séjour</span>
+                      <div className="mt-1.5">
+                        <AvailabilityCalendar
+                          unavailablePeriods={unavailablePeriods}
+                          startName="startDate"
+                          endName="endDate"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <label className="block">

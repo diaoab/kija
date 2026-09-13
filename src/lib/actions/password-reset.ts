@@ -177,12 +177,19 @@ export async function approvePasswordResetAction(
   return { tempPassword, adminName: request.admin.name, emailSent: sent };
 }
 
-export async function rejectPasswordResetAction(formData: FormData) {
+export type RejectResetState = { rejected?: boolean; error?: string };
+
+export async function rejectPasswordResetAction(
+  _prevState: RejectResetState,
+  formData: FormData
+): Promise<RejectResetState> {
   const current = await requirePermission("admins");
 
   const requestId = String(formData.get("requestId") || "");
   const request = await prisma.passwordResetRequest.findUnique({ where: { id: requestId } });
-  if (!request || request.status !== "pending") return;
+  if (!request || request.status !== "pending") {
+    return { error: "Cette demande n'est plus disponible." };
+  }
 
   await prisma.passwordResetRequest.update({
     where: { id: requestId },
@@ -191,4 +198,5 @@ export async function rejectPasswordResetAction(formData: FormData) {
 
   revalidatePath("/admin/administrateurs");
   revalidatePath("/admin");
+  return { rejected: true };
 }

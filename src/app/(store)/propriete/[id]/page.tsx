@@ -8,6 +8,7 @@ import { getBaseUrl } from "@/lib/url";
 import { getSiteSettings } from "@/lib/settings";
 import PropertyGallery from "@/components/PropertyGallery";
 import ReservationRequestForm from "@/components/ReservationRequestForm";
+import { getUnavailablePeriods } from "@/lib/actions/reservations";
 
 type PropertyPageProps = {
   params: Promise<{ id: string }>;
@@ -59,6 +60,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
   const isShort = property.rentalType === "SHORT";
   const price = isShort ? property.pricePerNight : property.pricePerMonth;
+  const unavailablePeriods = isShort ? await getUnavailablePeriods(property.id) : [];
 
   return (
     <div>
@@ -98,7 +100,11 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
             </p>
           </div>
 
-          <ReservationRequestForm propertyId={property.id} rentalType={property.rentalType} />
+          <ReservationRequestForm
+            propertyId={property.id}
+            rentalType={property.rentalType}
+            unavailablePeriods={unavailablePeriods}
+          />
         </div>
       </div>
     </div>

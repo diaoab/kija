@@ -3,7 +3,7 @@ import { getAdmins, deleteAdminAction, updateAdminPermissionsAction } from "@/li
 import { getPendingPasswordResets } from "@/lib/actions/password-reset";
 import { ALL_PERMISSIONS, PERMISSION_LABELS, parsePermissions } from "@/lib/permissions";
 import AdminCreateForm from "@/components/admin/AdminCreateForm";
-import PendingResetRow from "@/components/admin/PendingResetRow";
+import PendingResetsPanel from "@/components/admin/PendingResetsPanel";
 import ConfirmSubmitButton from "@/components/admin/ConfirmSubmitButton";
 
 export default async function AdminAdministratorsPage() {
@@ -18,18 +18,7 @@ export default async function AdminAdministratorsPage() {
         Ajoutez des membres de votre équipe et choisissez ce qu&apos;ils peuvent gérer.
       </p>
 
-      {pendingResets.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-sm font-medium">
-            Demandes de réinitialisation de mot de passe ({pendingResets.length})
-          </h2>
-          <div className="mt-3 space-y-3">
-            {pendingResets.map((request) => (
-              <PendingResetRow key={request.id} request={request} />
-            ))}
-          </div>
-        </div>
-      )}
+      <PendingResetsPanel initialRequests={pendingResets} />
 
       <div className="mt-6 space-y-3">
         {admins.map((admin) => {

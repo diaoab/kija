@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useActionState } from "react";
 import {
   confirmReservationAction,
   rejectReservationAction,
+  type ReservationActionState,
 } from "@/lib/actions/reservations";
 
 type ReservationData = {
@@ -34,7 +38,18 @@ function formatDate(date: Date | null) {
   return date ? new Date(date).toLocaleDateString("fr-FR") : null;
 }
 
+const initialActionState: ReservationActionState = {};
+
 export default function ReservationRow({ reservation }: { reservation: ReservationData }) {
+  const [confirmState, confirmFormAction, confirmPending] = useActionState(
+    confirmReservationAction,
+    initialActionState
+  );
+  const [rejectState, rejectFormAction, rejectPending] = useActionState(
+    rejectReservationAction,
+    initialActionState
+  );
+
   const dates =
     reservation.property.rentalType === "SHORT"
       ? [formatDate(reservation.startDate), formatDate(reservation.endDate)]
@@ -71,26 +86,30 @@ export default function ReservationRow({ reservation }: { reservation: Reservati
 
       {reservation.status === "pending" && (
         <div className="mt-3 flex items-center gap-2">
-          <form action={confirmReservationAction}>
+          <form action={confirmFormAction}>
             <input type="hidden" name="id" value={reservation.id} />
             <button
               type="submit"
-              className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background transition-opacity hover:opacity-90"
+              disabled={confirmPending}
+              className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              Confirmer
+              {confirmPending ? "..." : "Confirmer"}
             </button>
           </form>
-          <form action={rejectReservationAction}>
+          <form action={rejectFormAction}>
             <input type="hidden" name="id" value={reservation.id} />
             <button
               type="submit"
-              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-foreground/5"
+              disabled={rejectPending}
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-foreground/5 disabled:opacity-50"
             >
-              Refuser
+              {rejectPending ? "..." : "Refuser"}
             </button>
           </form>
         </div>
       )}
+      {confirmState.error && <p className="mt-2 text-xs text-red-600">{confirmState.error}</p>}
+      {rejectState.error && <p className="mt-2 text-xs text-red-600">{rejectState.error}</p>}
     </div>
   );
 }

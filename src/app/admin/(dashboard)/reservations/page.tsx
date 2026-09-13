@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { getReservations } from "@/lib/actions/reservations";
 import ReservationRow from "@/components/admin/ReservationRow";
+import ManualReservationForm from "@/components/admin/ManualReservationForm";
 
 const TABS: { value: string; label: string }[] = [
   { value: "pending", label: "En attente" },
@@ -19,12 +21,20 @@ export default async function AdminReservationsPage({
 
   const { status } = await searchParams;
   const activeStatus = status && TABS.some((tab) => tab.value === status) ? status : "pending";
-  const reservations = await getReservations(activeStatus);
+  const [reservations, properties] = await Promise.all([
+    getReservations(activeStatus),
+    prisma.property.findMany({
+      select: { id: true, title: true, city: true, rentalType: true },
+      orderBy: { title: "asc" },
+    }),
+  ]);
 
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-[0.25em] text-brand">Réservations</p>
       <h1 className="mt-2 font-serif text-3xl italic">Réservations</h1>
+
+      <ManualReservationForm properties={properties} />
 
       <div className="mt-6 flex flex-wrap gap-2">
         {TABS.map((tab) => (
